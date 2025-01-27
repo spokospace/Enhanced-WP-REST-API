@@ -1,0 +1,14 @@
+{
+    "name": "spoko/enhanced-wp-rest-api",
+    "description": "Extends WordPress REST API with additional fields and optimizations",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "autoload": {
+        "psr-4": {
+            "Spoko\\EnhancedRestAPI\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.3"
+    }
+}
