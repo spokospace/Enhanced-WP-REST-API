@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(php:*)",
+      "Bash(where php)",
+      "Bash(\"C:\\Users\\CNK\\.config\\herd\\bin\\php.bat\" test-toc-hierarchical.php)",
+      "Bash(del test-toc-hierarchical.php)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

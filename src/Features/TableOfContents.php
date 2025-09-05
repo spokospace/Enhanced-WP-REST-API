@@ -107,19 +107,64 @@ class TableOfContents
         $this->collisionCollector = [];
         $usedIds = [];
         $idCounters = [];
+        $headingHierarchy = []; // Track heading hierarchy for contextual IDs
 
         // Find all headers and process them sequentially
         preg_match_all('/<h([1-6])([^>]*?)>(.*?)<\/h\1>/i', $content, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
 
         // Process matches in reverse order to avoid position shifts when replacing
         $matches = array_reverse($matches);
+        
+        // First pass: collect all headings to understand structure
+        $allHeadings = [];
+        foreach (array_reverse($matches) as $match) {
+            $level = (int)$match[1][0];
+            $title = wp_strip_all_tags($match[3][0]);
+            $baseId = $this->slugify($title);
+            
+            $allHeadings[] = [
+                'level' => $level,
+                'title' => $title,
+                'baseId' => $baseId,
+                'match' => $match
+            ];
+        }
+        
+        // Build hierarchy and track duplicates
+        $titleCounts = [];
+        $hierarchicalContext = [];
+        
+        foreach ($allHeadings as $i => $heading) {
+            $baseId = $heading['baseId'];
+            $level = $heading['level'];
+            
+            // Count occurrences of each title
+            if (!isset($titleCounts[$baseId])) {
+                $titleCounts[$baseId] = 0;
+            }
+            $titleCounts[$baseId]++;
+            
+            // Build hierarchical context - find closest parent heading
+            $parentContext = '';
+            for ($j = $i - 1; $j >= 0; $j--) {
+                if ($allHeadings[$j]['level'] < $level) {
+                    $parentContext = $allHeadings[$j]['baseId'];
+                    break;
+                }
+            }
+            
+            $hierarchicalContext[$i] = $parentContext;
+        }
 
-        foreach ($matches as $match) {
+        // Second pass: generate IDs and replace content
+        foreach ($matches as $matchIndex => $match) {
+            $headingIndex = count($matches) - 1 - $matchIndex;
             $fullMatch = $match[0][0];
             $offset = $match[0][1];
             $level = $match[1][0];
             $attrs = $match[2][0];
             $title = wp_strip_all_tags($match[3][0]);
+            $baseId = $this->slugify($title);
             
             // Check if header already has an ID attribute
             if (preg_match('/id\s*=\s*["\']([^"\']*)["\']/', $attrs, $idMatch)) {
@@ -156,15 +201,24 @@ class TableOfContents
                 continue;
             }
             
-            // Header doesn't have ID - generate one
-            $baseId = $this->slugify($title);
+            // Header doesn't have ID - generate one with hierarchical context if needed
             $finalId = $baseId;
             
-            // Ensure uniqueness
+            // If this title appears multiple times, use hierarchical naming
+            if ($titleCounts[$baseId] > 1) {
+                $parentContext = $hierarchicalContext[$headingIndex];
+                if (!empty($parentContext)) {
+                    // Create flattened hierarchical ID: parent-context-title
+                    $finalId = $parentContext . '-' . $baseId;
+                }
+            }
+            
+            // Ensure uniqueness (fallback to numbered system if hierarchical ID is still duplicate)
             $counter = 1;
+            $originalId = $finalId;
             while (isset($usedIds[$finalId])) {
                 $counter++;
-                $finalId = $baseId . '-' . $counter;
+                $finalId = $originalId . '-' . $counter;
             }
             
             $usedIds[$finalId] = true;
