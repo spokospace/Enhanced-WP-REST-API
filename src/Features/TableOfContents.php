@@ -14,11 +14,9 @@ class TableOfContents
     public function __construct(
         private ErrorLogger $logger
     ) {
-        // Add hook to rest_api_init
-        add_action('rest_api_init', [$this, 'registerRestRoutes']);
-        
-        // Add hook to init for Polylang
-        add_action('init', [$this, 'initHooks']);
+        // FIXED: Remove hooks from constructor - causes timing issues
+        // REMOVED: add_action('rest_api_init', [$this, 'registerRestRoutes']);
+        // REMOVED: add_action('init', [$this, 'initHooks']);
     }
 
     public function register(): void
@@ -27,6 +25,24 @@ class TableOfContents
         if (!get_option('spoko_rest_toc_enabled', true)) {
             return;
         }
+
+        // Prevent duplicate hook registration
+        static $registered = false;
+        if ($registered) {
+            return;
+        }
+        $registered = true;
+
+        // Add content filter for frontend display
+        add_filter('the_content', [$this, 'addHeaderAnchors']);
+        
+        // Add filter for REST API responses to ensure headings have IDs
+        add_filter('rest_prepare_post', [$this, 'addHeaderAnchorsToRestAPI'], 20, 3);
+        add_filter('rest_prepare_page', [$this, 'addHeaderAnchorsToRestAPI'], 20, 3);
+        
+        // Clear any REST API cache when posts are updated
+        add_action('save_post', [$this, 'clearRestCache']);
+        add_action('post_updated', [$this, 'clearRestCache']);
     }
 
     public function registerRestRoutes(): void 
@@ -52,11 +68,7 @@ class TableOfContents
         );
     }
 
-    public function initHooks(): void 
-    {
-        // Add filter to modify post content
-        add_filter('the_content', [$this, 'addHeaderAnchors']);
-    }
+    // REMOVED: initHooks() method - no longer needed
 
     public function getTableOfContents(\WP_REST_Request $request): \WP_REST_Response
     {
@@ -68,8 +80,9 @@ class TableOfContents
                 return new \WP_REST_Response(['error' => 'Post not found'], 404);
             }
 
+            // Get the processed content with anchors already added
             $content = apply_filters('the_content', $post->post_content);
-            $toc = $this->extractHeadings($content);
+            $toc = $this->extractHeadingsFromProcessedContent($content);
 
             return new \WP_REST_Response([
                 'toc' => $toc
@@ -92,33 +105,142 @@ class TableOfContents
 
         // Reset collision collector
         $this->collisionCollector = [];
+        $usedIds = [];
+        $idCounters = [];
 
-        // Find all headers (h1-h6)
-        preg_match_all('/<h([1-6])(.*?)>(.*?)<\/h\1>/i', $content, $matches, PREG_SET_ORDER);
+        // Find all headers and process them sequentially
+        preg_match_all('/<h([1-6])([^>]*?)>(.*?)<\/h\1>/i', $content, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+
+        // Process matches in reverse order to avoid position shifts when replacing
+        $matches = array_reverse($matches);
 
         foreach ($matches as $match) {
-            $level = $match[1];
-            $attrs = $match[2];
-            $title = wp_strip_all_tags($match[3]);
+            $fullMatch = $match[0][0];
+            $offset = $match[0][1];
+            $level = $match[1][0];
+            $attrs = $match[2][0];
+            $title = wp_strip_all_tags($match[3][0]);
             
-            // Generate anchor ID
-            $anchor = $this->generateAnchorId($title);
+            // Check if header already has an ID attribute
+            if (preg_match('/id\s*=\s*["\']([^"\']*)["\']/', $attrs, $idMatch)) {
+                $currentId = $idMatch[1];
+                
+                // Check if this ID has been used before
+                if (isset($usedIds[$currentId])) {
+                    // Generate a unique version
+                    if (!isset($idCounters[$currentId])) {
+                        $idCounters[$currentId] = 1;
+                    }
+                    $idCounters[$currentId]++;
+                    
+                    $newId = $currentId . '-' . $idCounters[$currentId];
+                    
+                    // Make sure this new ID is also unique
+                    while (isset($usedIds[$newId])) {
+                        $idCounters[$currentId]++;
+                        $newId = $currentId . '-' . $idCounters[$currentId];
+                    }
+                    
+                    $usedIds[$newId] = true;
+                    
+                    // Replace the ID in the header
+                    $newAttrs = str_replace($idMatch[0], 'id="' . $newId . '"', $attrs);
+                    $newHeader = sprintf('<h%s%s>%s</h%s>', $level, $newAttrs, $match[3][0], $level);
+                    
+                    // Replace in content using substr_replace for exact position
+                    $content = substr_replace($content, $newHeader, $offset, strlen($fullMatch));
+                } else {
+                    // First occurrence of this ID, mark it as used
+                    $usedIds[$currentId] = true;
+                }
+                continue;
+            }
+            
+            // Header doesn't have ID - generate one
+            $baseId = $this->slugify($title);
+            $finalId = $baseId;
+            
+            // Ensure uniqueness
+            $counter = 1;
+            while (isset($usedIds[$finalId])) {
+                $counter++;
+                $finalId = $baseId . '-' . $counter;
+            }
+            
+            $usedIds[$finalId] = true;
+            
+            // Handle malformed HTML - if attrs doesn't start with space, add one
+            $spaceBefore = (empty($attrs) || substr($attrs, 0, 1) === ' ') ? '' : ' ';
+            
+            // Add ID attribute to existing attributes
+            $newAttrs = $attrs . $spaceBefore . ' id="' . $finalId . '"';
             
             // Create new header with ID attribute
-            $newHeader = sprintf(
-                '<h%s%s id="%s">%s</h%s>',
-                $level,
-                $attrs,
-                $anchor,
-                $match[3],
-                $level
-            );
+            $newHeader = sprintf('<h%s%s>%s</h%s>', $level, $newAttrs, $match[3][0], $level);
             
-            // Replace old header with new one
-            $content = str_replace($match[0], $newHeader, $content);
+            // Replace in content using substr_replace for exact position
+            $content = substr_replace($content, $newHeader, $offset, strlen($fullMatch));
         }
 
         return $content;
+    }
+
+    /**
+     * Add header anchors to REST API responses
+     * This ensures the content.rendered field has proper heading IDs
+     */
+    public function addHeaderAnchorsToRestAPI(\WP_REST_Response $response, \WP_Post $post, \WP_REST_Request $request): \WP_REST_Response
+    {
+        $data = $response->get_data();
+        
+        // Process the rendered content to add header anchors
+        if (isset($data['content']['rendered'])) {
+            $original_content = $data['content']['rendered'];
+            
+            // Add header anchors directly to the already rendered content
+            $content_with_anchors = $this->addHeaderAnchors($original_content);
+            
+            // Only update if content actually changed
+            if ($content_with_anchors !== $original_content) {
+                $data['content']['rendered'] = $content_with_anchors;
+                $response->set_data($data);
+            }
+        }
+        
+        return $response;
+    }
+
+    /**
+     * Clear REST API cache when posts are updated
+     */
+    public function clearRestCache($post_id): void
+    {
+        if (wp_is_post_revision($post_id)) {
+            return;
+        }
+        
+        // Clear any object cache related to REST API
+        wp_cache_delete("rest_post_{$post_id}", 'posts');
+        wp_cache_delete("rest_prepare_post_{$post_id}", 'posts');
+        
+        // Also clear any transients that might be caching REST responses
+        delete_transient("rest_api_post_{$post_id}");
+        
+        // Clear WordPress object cache
+        wp_cache_flush();
+    }
+    
+    /**
+     * Method to manually clear all caches - useful for debugging
+     */
+    public function clearAllCaches(): void
+    {
+        wp_cache_flush();
+        
+        // Clear any REST API related transients
+        global $wpdb;
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_rest_api_%'");
+        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_rest_api_%'");
     }
 
     private function extractHeadings(string $content): array
@@ -159,26 +281,84 @@ class TableOfContents
         return $structure;
     }
 
+    /**
+     * Extract headings from content that already has ID attributes added
+     * This ensures the TOC uses the exact same IDs as in the processed content
+     */
+    private function extractHeadingsFromProcessedContent(string $content): array
+    {
+        $currentLevel = 0;
+        $structure = [];
+        $stack = [&$structure];
+
+        // Find all headers (h1-h6) - handles both properly formatted and malformed HTML
+        // This regex handles cases like <h2class="..." id="..."> and <h2 class="..." id="...">
+        preg_match_all('/<h([1-6])(?:[^>]*?)id\s*=\s*["\']([^"\']+)["\'][^>]*?>(.*?)<\/h\1>/i', $content, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $match) {
+            $level = (int)$match[1];
+            $id = $match[2]; // ID will be present due to regex requirement
+            $title = wp_strip_all_tags($match[3]);
+
+            $item = [
+                'title' => $title,
+                'anchor' => $id,
+                'level' => $level,
+                'children' => []
+            ];
+
+            // Adjust the stack based on heading levels
+            while ($level <= $currentLevel && count($stack) > 1) {
+                array_pop($stack);
+                $currentLevel--;
+            }
+
+            $currentParent = &$stack[count($stack) - 1];
+            $currentParent[] = $item;
+            $stack[] = &$currentParent[count($currentParent) - 1]['children'];
+            $currentLevel = $level;
+        }
+
+        return $structure;
+    }
+
     private function generateAnchorId(string $text): string
     {
         // Convert to lowercase and transliterate
-        $anchor = $this->slugify($text);
-
-        // Handle collisions
-        if (isset($this->collisionCollector[$anchor])) {
-            $this->collisionCollector[$anchor]++;
-            $anchor .= '-' . $this->collisionCollector[$anchor];
+        $baseAnchor = $this->slugify($text);
+        
+        // Handle collisions - increment counter for each occurrence
+        if (isset($this->collisionCollector[$baseAnchor])) {
+            // This is a duplicate, increment the counter
+            $this->collisionCollector[$baseAnchor]++;
+            $anchor = $baseAnchor . '-' . $this->collisionCollector[$baseAnchor];
         } else {
-            $this->collisionCollector[$anchor] = 1;
+            // First occurrence - initialize counter and use base anchor
+            $this->collisionCollector[$baseAnchor] = 1;
+            $anchor = $baseAnchor;
         }
 
         return $anchor;
     }
+    
 
     private function slugify(string $text): string
     {
-        // Transliterate non-ASCII characters
-        $text = transliterator_transliterate('Any-Latin; Latin-ASCII', $text);
+        // Handle Polish characters manually if transliterator is not available
+        $polishChars = [
+            'ą' => 'a', 'ć' => 'c', 'ę' => 'e', 'ł' => 'l', 'ń' => 'n',
+            'ó' => 'o', 'ś' => 's', 'ź' => 'z', 'ż' => 'z',
+            'Ą' => 'A', 'Ć' => 'C', 'Ę' => 'E', 'Ł' => 'L', 'Ń' => 'N',
+            'Ó' => 'O', 'Ś' => 'S', 'Ź' => 'Z', 'Ż' => 'Z'
+        ];
+        
+        // Replace Polish characters first
+        $text = str_replace(array_keys($polishChars), array_values($polishChars), $text);
+        
+        // Try to use transliterator if available, otherwise use manual replacements
+        if (class_exists('Transliterator')) {
+            $text = transliterator_transliterate('Any-Latin; Latin-ASCII', $text);
+        }
         
         // Convert to lowercase
         $text = strtolower($text);

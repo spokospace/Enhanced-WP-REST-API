@@ -11,6 +11,7 @@ use Spoko\EnhancedRestAPI\Features\{
     PageExcerpt,
     TableOfContents,
     RelatedPosts,
+    FormattedHeadlines,
     AdminInterface
 };
 use Spoko\EnhancedRestAPI\Services\{
@@ -42,6 +43,7 @@ final class Plugin extends Singleton
             new PageExcerpt($this->logger),
             new TableOfContents($this->logger),
             new RelatedPosts($this->logger),
+            new FormattedHeadlines($this->logger), 
             new AdminInterface($this->cache)
         ];
     }
@@ -67,6 +69,12 @@ final class Plugin extends Singleton
     public function registerRestFields(): void
     {
         foreach ($this->features as $feature) {
+            // FIXED: Call registerRestRoutes() for REST routes (like TableOfContents)
+            if (method_exists($feature, 'registerRestRoutes')) {
+                $feature->registerRestRoutes();
+            }
+            
+            // Call register() for REST fields and other features
             if (method_exists($feature, 'register')) {
                 $feature->register();
             }
