@@ -61,6 +61,15 @@ Configurable via admin panel:
 - **Anonymous Comments** - Allow posting comments via REST API without authentication
 - **Comment Notifications** - Automatic email notifications to moderators when new comments are created via REST API
 
+### Headless Mode (Optional)
+Complete headless WordPress functionality:
+- **Frontend Redirect** - Automatically redirects all visitors to your headless frontend application
+- **Admin Access** - Users with `edit_posts` capability can still access WordPress admin
+- **API Access** - REST API, GraphQL, WP-CLI, and CRON continue to work normally
+- **Path Preservation** - URL paths are preserved during redirect (e.g., `/blog/post-slug` → `https://frontend.com/blog/post-slug`)
+- **301 Redirects** - Permanent redirects for SEO
+- **No External Plugin Needed** - Replaces standalone headless mode plugins
+
 ## Usage Examples
 
 ### Basic Post Request

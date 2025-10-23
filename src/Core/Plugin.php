@@ -13,7 +13,8 @@ use Spoko\EnhancedRestAPI\Features\{
     RelatedPosts,
     FormattedHeadlines,
     AdminInterface,
-    CommentsSupport
+    CommentsSupport,
+    HeadlessMode
 };
 use Spoko\EnhancedRestAPI\Services\{
     TranslationCache,
@@ -46,6 +47,7 @@ final class Plugin extends Singleton
             new RelatedPosts($this->logger),
             new FormattedHeadlines($this->logger),
             new CommentsSupport($this->logger),
+            new HeadlessMode($this->logger),
             new AdminInterface($this->cache)
         ];
     }

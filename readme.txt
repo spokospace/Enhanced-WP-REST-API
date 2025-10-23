@@ -4,7 +4,7 @@ Tags: rest-api, headless, cms, api, polylang, multilingual, astro, nextjs
 Requires at least: 5.0
 Tested up to: 6.7
 Requires PHP: 8.3
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -82,6 +82,17 @@ Configurable via admin panel:
 * Anonymous Comments - Allow posting comments via REST API without authentication
 * Comment Notifications - Automatic email notifications to moderators when new comments are created via REST API
 
+**Headless Mode (Optional)**
+
+Complete headless WordPress functionality:
+
+* Frontend Redirect - Automatically redirects all visitors to your headless frontend application
+* Admin Access - Users with edit_posts capability can still access WordPress admin
+* API Access - REST API, GraphQL, WP-CLI, and CRON continue to work normally
+* Path Preservation - URL paths are preserved during redirect
+* 301 Redirects - Permanent redirects for SEO
+* No External Plugin Needed - Replaces standalone headless mode plugins
+
 = Perfect for Headless WordPress =
 
 This plugin is specifically designed for headless WordPress setups where:
@@ -137,6 +148,15 @@ No, the plugin is optimized for performance and only adds minimal processing to 
 
 == Changelog ==
 
+= 1.0.8 =
+* Added: Headless Mode - Complete headless WordPress functionality
+* Added: Frontend redirect with URL path preservation
+* Added: Admin panel settings for headless frontend URL
+* Feature: Replaces standalone headless mode plugins
+* Feature: 301 permanent redirects for SEO
+* Feature: Admin/editors can still access WordPress admin
+* Feature: REST API, GraphQL, WP-CLI, and CRON continue to work
+
 = 1.0.7 =
 * Fixed: REST route registration error for related posts endpoint
 * Added: Read time calculation for all posts (read_time field)
@@ -155,6 +175,9 @@ No, the plugin is optimized for performance and only adds minimal processing to 
 * Initial release
 
 == Upgrade Notice ==
+
+= 1.0.8 =
+Major new feature: Headless Mode - Replaces standalone headless mode plugins. Redirect visitors to your headless frontend while keeping WordPress admin and API accessible.
 
 = 1.0.7 =
 Important bug fix for REST route registration. New features: read time calculation and optional anonymous comments support with email notifications.

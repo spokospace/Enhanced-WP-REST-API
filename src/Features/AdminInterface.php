@@ -12,6 +12,7 @@ class AdminInterface
     private const NONCE_CACHE = 'clear_spoko_rest_cache';
     private const NONCE_FEATURES = 'save_spoko_rest_features';
     private const NONCE_HEADLINES = 'save_spoko_rest_headlines';
+    private const NONCE_HEADLESS = 'save_spoko_rest_headless';
 
     public function __construct(
         private TranslationCache $cache
@@ -89,6 +90,12 @@ class AdminInterface
             return 'Features settings saved successfully!';
         }
 
+        // Handle headless mode settings
+        if (isset($_POST['save_headless']) && check_admin_referer(self::NONCE_HEADLESS)) {
+            $this->saveHeadlessSettings();
+            return 'Headless mode settings saved successfully!';
+        }
+
         return null;
     }
 
@@ -126,6 +133,29 @@ class AdminInterface
                 isset($_POST[str_replace('spoko_rest_', '', $feature)]) ? '1' : '0'
             );
         }
+    }
+
+    private function saveHeadlessSettings(): void
+    {
+        // Save enabled/disabled state
+        update_option(
+            'spoko_rest_headless_mode_enabled',
+            isset($_POST['headless_mode_enabled']) ? '1' : '0'
+        );
+
+        // Save and sanitize the client URL
+        $client_url = isset($_POST['headless_client_url']) ? sanitize_text_field($_POST['headless_client_url']) : '';
+
+        // Remove trailing slash for consistency
+        $client_url = rtrim($client_url, '/');
+
+        // Validate URL format if not empty
+        if (!empty($client_url) && !filter_var($client_url, FILTER_VALIDATE_URL)) {
+            // Don't save invalid URLs
+            $client_url = '';
+        }
+
+        update_option('spoko_rest_headless_client_url', $client_url);
     }
 
     public function renderAdminPage(): void
@@ -264,6 +294,70 @@ class AdminInterface
                     </table>
 
                     <?php submit_button('Save Features', 'primary', 'save_features', false); ?>
+                </form>
+            </div>
+
+            <!-- Headless Mode -->
+            <div class="card">
+                <h2 class="title">Headless Mode</h2>
+                <p class="description">
+                    Configure headless WordPress mode. When enabled, the WordPress frontend is disabled and all visitors are redirected to your headless frontend application.
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field(self::NONCE_HEADLESS); ?>
+                    <input type="hidden" name="save_headless" value="1">
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Enable Headless Mode</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="headless_mode_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_headless_mode_enabled', '0')); ?>>
+                                    Enable headless mode
+                                </label>
+                                <p class="description">
+                                    When enabled, visitors will be redirected to your headless frontend. Admins and editors can still access WordPress admin.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Headless Frontend URL</th>
+                            <td>
+                                <input type="url"
+                                    name="headless_client_url"
+                                    value="<?php echo esc_attr(get_option('spoko_rest_headless_client_url', '')); ?>"
+                                    class="regular-text"
+                                    placeholder="https://example.com">
+                                <p class="description">
+                                    The URL of your headless frontend application. Visitors will be redirected here with a 301 permanent redirect.<br>
+                                    URL paths are preserved (e.g., <code>/blog/post-slug</code> redirects to <code>https://example.com/blog/post-slug</code>)
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">What Still Works</th>
+                            <td>
+                                <p class="description">
+                                    When headless mode is enabled, these features continue to work normally:
+                                </p>
+                                <ul style="margin-left: 20px; list-style: disc;">
+                                    <li><strong>WordPress Admin</strong> - Accessible to users with <code>edit_posts</code> capability</li>
+                                    <li><strong>REST API</strong> - All REST API endpoints remain accessible</li>
+                                    <li><strong>GraphQL</strong> - GraphQL endpoints continue to work</li>
+                                    <li><strong>WP-CLI</strong> - Command line access unaffected</li>
+                                    <li><strong>CRON Jobs</strong> - Scheduled tasks run normally</li>
+                                </ul>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <?php submit_button('Save Headless Settings', 'primary', 'save_headless', false); ?>
                 </form>
             </div>
 
