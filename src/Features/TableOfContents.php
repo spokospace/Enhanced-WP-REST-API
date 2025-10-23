@@ -312,10 +312,12 @@ class TableOfContents
         foreach ($matches as $match) {
             $level = (int)$match[1];
             $title = wp_strip_all_tags($match[3]);
+            $title_html = $match[3]; // Preserve HTML formatting
             $anchor = $this->generateAnchorId($title);
 
             $item = [
                 'title' => $title,
+                'title_html' => $title_html,
                 'anchor' => $anchor,
                 'level' => $level,
                 'children' => []
@@ -353,9 +355,11 @@ class TableOfContents
             $level = (int)$match[1];
             $id = $match[2]; // ID will be present due to regex requirement
             $title = wp_strip_all_tags($match[3]);
+            $title_html = $match[3]; // Preserve HTML formatting
 
             $item = [
                 'title' => $title,
+                'title_html' => $title_html,
                 'anchor' => $id,
                 'level' => $level,
                 'children' => []
