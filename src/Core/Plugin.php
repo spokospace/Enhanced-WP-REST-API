@@ -12,7 +12,8 @@ use Spoko\EnhancedRestAPI\Features\{
     TableOfContents,
     RelatedPosts,
     FormattedHeadlines,
-    AdminInterface
+    AdminInterface,
+    CommentsSupport
 };
 use Spoko\EnhancedRestAPI\Services\{
     TranslationCache,
@@ -43,7 +44,8 @@ final class Plugin extends Singleton
             new PageExcerpt($this->logger),
             new TableOfContents($this->logger),
             new RelatedPosts($this->logger),
-            new FormattedHeadlines($this->logger), 
+            new FormattedHeadlines($this->logger),
+            new CommentsSupport($this->logger),
             new AdminInterface($this->cache)
         ];
     }

@@ -43,6 +43,11 @@ class PostFields
             'schema' => ['description' => 'Relative URL', 'type' => 'string']
         ]);
 
+        register_rest_field($postType, 'read_time', [
+            'get_callback' => [$this, 'getReadTime'],
+            'schema' => ['description' => 'Estimated reading time', 'type' => 'string']
+        ]);
+
         if (function_exists('pll_get_post')) {
             register_rest_field($postType, 'translations_data', [
                 'get_callback' => [$this, 'getTranslationsData'],
@@ -202,6 +207,29 @@ class PostFields
         } catch (\Exception $e) {
             $this->logger->logError('Error getting relative link', ['post_id' => $post['id'], 'error' => $e->getMessage()]);
             return '';
+        }
+    }
+
+    public function getReadTime(array $post): string
+    {
+        try {
+            $postObject = get_post($post['id']);
+            if (!$postObject) {
+                return '0 min read';
+            }
+
+            $content = $postObject->post_content;
+            $wordCount = count(explode(' ', strip_tags($content))) + 1;
+            $readingTime = $wordCount / 200; // Average reading speed: 200 words per minute
+
+            if (is_float($readingTime)) {
+                $readingTime = ceil($readingTime);
+            }
+
+            return $readingTime . ' min read';
+        } catch (\Exception $e) {
+            $this->logger->logError('Error calculating read time', ['post_id' => $post['id'], 'error' => $e->getMessage()]);
+            return '0 min read';
         }
     }
 

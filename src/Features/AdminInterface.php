@@ -115,7 +115,9 @@ class AdminInterface
             'spoko_rest_related_posts_enabled',
             'spoko_rest_toc_enabled',
             'spoko_rest_page_excerpt_enabled',
-            'spoko_rest_relative_urls_enabled'
+            'spoko_rest_relative_urls_enabled',
+            'spoko_rest_anonymous_comments_enabled',
+            'spoko_rest_comment_notifications_enabled'
         ];
 
         foreach ($features as $feature) {
@@ -224,6 +226,38 @@ class AdminInterface
                                 </label>
                                 <p class="description">
                                     Make all URLs relative instead of absolute in taxonomy responses
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Anonymous Comments</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="anonymous_comments_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_anonymous_comments_enabled', '0')); ?>>
+                                    Allow anonymous comments via REST API
+                                </label>
+                                <p class="description">
+                                    Enable posting comments without authentication through the REST API
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Comment Notifications</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="comment_notifications_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_comment_notifications_enabled', '0')); ?>>
+                                    Email notifications for new comments
+                                </label>
+                                <p class="description">
+                                    Send email notifications to moderators when comments are created via REST API
                                 </p>
                             </td>
                         </tr>

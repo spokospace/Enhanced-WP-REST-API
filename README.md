@@ -19,6 +19,7 @@ Plugin enhances WordPress REST API with additional fields, optimizations, and re
  - Author description
 - `featured_image_urls` - All registered image sizes with URLs
 - `relative_link` - Post URL relative to site root
+- `read_time` - Estimated reading time (e.g., "5 min read")
 - `categories_data` - Enhanced category information:
  - ID, name, slug
  - Description and post count
@@ -54,6 +55,11 @@ When Polylang is active, adds:
  - Tags (with name and slug)
 - `available_languages` - List of site languages
 - Automatic language filtering in API requests
+
+### Comments Support (Optional)
+Configurable via admin panel:
+- **Anonymous Comments** - Allow posting comments via REST API without authentication
+- **Comment Notifications** - Automatic email notifications to moderators when new comments are created via REST API
 
 ## Usage Examples
 

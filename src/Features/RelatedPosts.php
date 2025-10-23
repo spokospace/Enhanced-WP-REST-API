@@ -20,7 +20,7 @@ class RelatedPosts
 
     public function __construct(private ErrorLogger $logger) {}
 
-    public function register(): void
+    public function registerRestRoutes(): void
     {
         if (!get_option('spoko_rest_related_posts_enabled', true)) {
             return;
