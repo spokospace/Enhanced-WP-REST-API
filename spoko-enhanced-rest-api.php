@@ -2,7 +2,7 @@
 /**
  * Plugin Name: SPOKO Enhanced WP REST API
  * Description: Extends WordPress REST API with additional fields and optimizations
- * Version: 1.0.9
+ * Version: 1.0.10
  * Author: spoko.space
  * Author URI: https://spoko.space
  * Requires at least: 5.0
