@@ -19,27 +19,23 @@ class TableOfContents
         // REMOVED: add_action('init', [$this, 'initHooks']);
     }
 
-    public function register(): void
+    /**
+     * Register REST API fields and filters (called from rest_api_init)
+     */
+    public function registerRestFields(): void
     {
         // Check if feature is enabled
         if (!get_option('spoko_rest_toc_enabled', true)) {
             return;
         }
 
-        // Prevent duplicate hook registration
-        static $registered = false;
-        if ($registered) {
-            return;
-        }
-        $registered = true;
-
         // Add content filter for frontend display
         add_filter('the_content', [$this, 'addHeaderAnchors']);
-        
+
         // Add filter for REST API responses to ensure headings have IDs
         add_filter('rest_prepare_post', [$this, 'addHeaderAnchorsToRestAPI'], 20, 3);
         add_filter('rest_prepare_page', [$this, 'addHeaderAnchorsToRestAPI'], 20, 3);
-        
+
         // Clear any REST API cache when posts are updated
         add_action('save_post', [$this, 'clearRestCache']);
         add_action('post_updated', [$this, 'clearRestCache']);

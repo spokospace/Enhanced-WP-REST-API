@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Spoko\EnhancedRestAPI\Features;
 
-use Spoko\EnhancedRestAPI\Services\ErrorLogger;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_Term_Query;
@@ -17,8 +16,6 @@ class RelatedPosts
     private const TAXONOMY_CATEGORY = 'category';
     private const POST_TYPE = 'post';
     private const POST_STATUS = 'publish';
-
-    public function __construct(private ErrorLogger $logger) {}
 
     public function registerRestRoutes(): void
     {

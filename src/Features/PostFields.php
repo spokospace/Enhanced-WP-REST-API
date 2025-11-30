@@ -12,7 +12,10 @@ class PostFields
         private TranslationCache $cache
     ) {}
 
-    public function register(): void
+    /**
+     * Register REST API fields (called from rest_api_init)
+     */
+    public function registerRestFields(): void
     {
         $postTypes = get_post_types(['public' => true]);
 

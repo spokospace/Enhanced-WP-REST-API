@@ -32,11 +32,21 @@ class FormattedHeadlines
     private const META_KEY = '_formatted_headline';
     private const DEFAULT_OPTION_VALUE = '1';
 
-    public function register(): void
+    /**
+     * Register REST API fields (called from rest_api_init)
+     */
+    public function registerRestFields(): void
+    {
+        $this->registerRestFieldsInternal();
+        add_filter('rest_prepare_post_tag', [$this, 'addFormattedHeadlineToTagResponse'], 10, 3);
+    }
+
+    /**
+     * Register admin features (called from admin_init)
+     */
+    public function registerAdmin(): void
     {
         $this->registerMetaboxes();
-        $this->registerRestFields();
-        add_filter('rest_prepare_post_tag', [$this, 'addFormattedHeadlineToTagResponse'], 10, 3);
         add_action('admin_enqueue_scripts', [$this, 'enqueueAdminScripts']);
     }
 
@@ -102,7 +112,7 @@ class FormattedHeadlines
         }
     }
 
-    private function registerRestFields(): void
+    private function registerRestFieldsInternal(): void
     {
         $restFields = [
             'post' => [$this, 'getFormattedHeadline'],

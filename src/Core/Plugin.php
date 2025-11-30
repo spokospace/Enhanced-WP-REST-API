@@ -45,11 +45,11 @@ final class Plugin extends Singleton
             new TermOrder($this->logger),
             new PostFields($this->logger, $this->cache),
             new TaxonomyFields($this->logger, $this->cache),
-            new PolylangSupport($this->logger),
-            new PageExcerpt($this->logger),
+            new PolylangSupport(),
+            new PageExcerpt(),
             new TableOfContents($this->logger),
-            new RelatedPosts($this->logger),
-            new FormattedHeadlines($this->logger),
+            new RelatedPosts(),
+            new FormattedHeadlines(),
             new CommentsSupport($this->logger),
             new HeadlessMode($this->logger),
             new AdminInterface($this->cache)
@@ -60,20 +60,12 @@ final class Plugin extends Singleton
     {
         // NOTE: registerGlobalFeatures() is called directly in __construct()
         // because we can't hook to init:1 when we're already being called from init:10
+        // AdminInterface::register() already adds the admin_menu hook
 
-        // Initialize REST API
+        // Initialize REST API fields and routes
         add_action('rest_api_init', [$this, 'registerRestFields']);
 
-        // Initialize admin menu
-        add_action('admin_menu', function () {
-            foreach ($this->features as $feature) {
-                if ($feature instanceof AdminInterface) {
-                    $feature->addAdminMenuPage();
-                }
-            }
-        }, 99);
-
-        // Initialize admin features
+        // Initialize admin features (metaboxes, columns, etc.) - separate from REST
         add_action('admin_init', [$this, 'registerAdminFeatures']);
     }
 
@@ -98,17 +90,23 @@ final class Plugin extends Singleton
     {
         foreach ($this->features as $feature) {
             // Skip features already registered globally
-            if ($feature instanceof HeadlessMode) {
+            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface) {
                 continue;
             }
 
-            // FIXED: Call registerRestRoutes() for REST routes (like TableOfContents)
+            // Call registerRestRoutes() for REST routes (like TableOfContents, RelatedPosts)
             if (method_exists($feature, 'registerRestRoutes')) {
                 $feature->registerRestRoutes();
             }
 
-            // Call register() for REST fields and other features
-            if (method_exists($feature, 'register')) {
+            // Call registerRestFields() for REST fields only
+            if (method_exists($feature, 'registerRestFields')) {
+                $feature->registerRestFields();
+            }
+
+            // Fallback: Call register() for features that don't have separate methods
+            // These are REST-only features like TermOrder, TaxonomyFields, PolylangSupport
+            if (method_exists($feature, 'register') && !method_exists($feature, 'registerRestFields')) {
                 $feature->register();
             }
         }
@@ -122,8 +120,9 @@ final class Plugin extends Singleton
                 continue;
             }
 
-            if (method_exists($feature, 'register')) {
-                $feature->register();
+            // Call registerAdmin() for admin-specific features (metaboxes, columns, etc.)
+            if (method_exists($feature, 'registerAdmin')) {
+                $feature->registerAdmin();
             }
         }
     }

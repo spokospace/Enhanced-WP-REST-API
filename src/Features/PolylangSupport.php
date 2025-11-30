@@ -3,15 +3,9 @@ declare(strict_types=1);
 
 namespace Spoko\EnhancedRestAPI\Features;
 
-use Spoko\EnhancedRestAPI\Services\ErrorLogger;
-
 class PolylangSupport
 {
     private const SUPPORTED_TYPES = ['post', 'category', 'post_tag'];
-
-    public function __construct(
-        private ErrorLogger $logger
-    ) {}
 
     public function register(): void
     {

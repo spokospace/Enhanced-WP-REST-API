@@ -11,7 +11,10 @@ class CommentsSupport
         private ErrorLogger $logger
     ) {}
 
-    public function register(): void
+    /**
+     * Register REST API fields and filters (called from rest_api_init)
+     */
+    public function registerRestFields(): void
     {
         // Check if anonymous comments feature is enabled
         if (get_option('spoko_rest_anonymous_comments_enabled', '0') === '1') {

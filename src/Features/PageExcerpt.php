@@ -3,15 +3,13 @@ declare(strict_types=1);
 
 namespace Spoko\EnhancedRestAPI\Features;
 
-use Spoko\EnhancedRestAPI\Services\ErrorLogger;
-
 class PageExcerpt
 {
-    public function __construct(
-        private ErrorLogger $logger
-    ) {}
 
-    public function register(): void
+    /**
+     * Register admin features (called from admin_init)
+     */
+    public function registerAdmin(): void
     {
         // Check if feature is enabled
         if (!get_option('spoko_rest_page_excerpt_enabled', true)) {
@@ -53,10 +51,6 @@ class PageExcerpt
             isset($_POST['excerpt'])
         ) {
             $data['post_excerpt'] = sanitize_textarea_field(wp_unslash($_POST['excerpt']));
-            $this->logger->logError('Filtering post data', [
-                'post_id' => $postarr['ID'] ?? 'not set',
-                'excerpt' => $data['post_excerpt']
-            ]);
         }
         return $data;
     }
@@ -172,11 +166,6 @@ class PageExcerpt
             ]);
 
             add_action('wp_ajax_inline-save', [$this, 'saveQuickEdit'], 1);
-
-            $this->logger->logError('Saving quick edit', [
-                'post_id' => $post_id,
-                'excerpt' => $_POST['excerpt']
-            ]);
         }
     }
 }
