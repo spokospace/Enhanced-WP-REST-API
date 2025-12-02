@@ -35,9 +35,16 @@ class CommentsSupport
     public function sendCommentNotification(int $comment_id, \WP_Comment $comment): void
     {
         try {
-            // Call the built-in WordPress function to notify moderators
-            if (function_exists('wp_new_comment_notify_moderator')) {
-                wp_new_comment_notify_moderator($comment_id);
+            // For approved comments: notify post author
+            if ($comment->comment_approved === '1') {
+                if (function_exists('wp_new_comment_notify_postauthor')) {
+                    wp_new_comment_notify_postauthor($comment_id);
+                }
+            } else {
+                // For pending/unapproved comments: notify moderators
+                if (function_exists('wp_new_comment_notify_moderator')) {
+                    wp_new_comment_notify_moderator($comment_id);
+                }
             }
         } catch (\Exception $e) {
             $this->logger->logError('Error sending comment notification', [
