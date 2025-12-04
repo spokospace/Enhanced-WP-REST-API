@@ -1,6 +1,6 @@
 # SPOKO Enhanced WP REST API
 
-Plugin enhances WordPress REST API with additional fields, optimizations, and relative URL support. Designed specifically for headless WordPress setups (Headless CMS) where WordPress serves as a backend API, while the frontend is built with modern frameworks like Astro, Next.js, Nuxt, or any other JavaScript framework.
+Plugin enhances WordPress REST API with additional fields, optimizations, relative URL support, and GA4 Popular Posts integration. Designed specifically for headless WordPress setups (Headless CMS) where WordPress serves as a backend API, while the frontend is built with modern frameworks like Astro, Next.js, Nuxt, or any other JavaScript framework.
 
 ## Why use this plugin?
 - Perfect for headless WordPress architectures
@@ -69,6 +69,15 @@ Complete headless WordPress functionality:
 - **Path Preservation** - URL paths are preserved during redirect (e.g., `/blog/post-slug` → `https://frontend.com/blog/post-slug`)
 - **301 Redirects** - Permanent redirects for SEO
 - **No External Plugin Needed** - Replaces standalone headless mode plugins
+
+### GA4 Popular Posts (Optional)
+Fetch popular posts based on real Google Analytics 4 pageview data:
+- **Real Analytics Data** - Posts ranked by actual pageviews from GA4
+- **Multilingual Support** - Filter by language (Polylang integration)
+- **Configurable Period** - 7, 14, 30, or 90 days
+- **Smart Caching** - Configurable cache duration (1-24 hours)
+- **Service Account Auth** - Secure JWT-based authentication with Google
+- **No Google SDK Required** - Lightweight implementation using WordPress HTTP API
 
 ## Usage Examples
 
@@ -199,3 +208,84 @@ fetch('/wp-json/wp/v2/posts/123')
     console.log(post.available_languages); // ["en", "pl"]
   });
 ```
+
+### GA4 Popular Posts
+
+```javascript
+// Get 12 most popular posts from last 30 days (default)
+fetch('/wp-json/wp/v2/posts/popular')
+  .then(res => res.json())
+  .then(data => {
+    // Response example:
+    // {
+    //   "posts": [
+    //     {
+    //       "id": 123,
+    //       "title": { "rendered": "Most Popular Article" },
+    //       "slug": "most-popular-article",
+    //       "link": "/blog/most-popular-article",
+    //       "date": "2025-01-15T10:30:00+00:00",
+    //       "pageviews": 1542,
+    //       "featured_image_urls": { "thumbnail": "...", "medium": "...", "full": "..." },
+    //       "excerpt": { "rendered": "Article excerpt..." },
+    //       "categories_data": [{ "id": 5, "name": "News", "slug": "news" }],
+    //       "lang": "en"
+    //     },
+    //     ...
+    //   ],
+    //   "total": 12,
+    //   "period": "30d",
+    //   "cached": true,
+    //   "cached_at": "2025-01-20T08:00:00+00:00"
+    // }
+  });
+
+// Get popular posts with custom parameters
+fetch('/wp-json/wp/v2/posts/popular?limit=6&period=7d&lang=pl')
+  .then(res => res.json())
+  .then(data => {
+    // Returns 6 most popular Polish posts from last 7 days
+    console.log(data.posts);
+  });
+
+// Available parameters:
+// - limit: 1-50 (default: 12)
+// - period: 7d, 14d, 30d, 90d (default: 30d)
+// - lang: language slug, e.g., "en", "pl" (requires Polylang)
+```
+
+## GA4 Configuration
+
+To use the GA4 Popular Posts feature, you need to configure Google Analytics 4 access:
+
+### 1. Create a Service Account
+1. Go to [Google Cloud Console → Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts)
+2. Select your project (or create one)
+3. Click "Create Service Account"
+4. Give it a name (e.g., "WordPress GA4 Reader")
+5. Click "Create and Continue"
+6. Skip the optional steps and click "Done"
+
+### 2. Generate JSON Key
+1. Click on the newly created service account
+2. Go to "Keys" tab
+3. Click "Add Key" → "Create new key"
+4. Select "JSON" and click "Create"
+5. Save the downloaded JSON file
+
+### 3. Grant GA4 Access
+1. Go to [Google Analytics](https://analytics.google.com/)
+2. Navigate to Admin → Property Access Management
+3. Click "+" to add a new user
+4. Enter the service account email (from the JSON file: `client_email`)
+5. Set role to "Viewer"
+6. Click "Add"
+
+### 4. Configure Plugin
+1. Go to WordPress Admin → SPOKO REST API
+2. Find "GA4 Popular Posts" section
+3. Enable the feature
+4. Enter your GA4 Property ID (numeric, e.g., `123456789`)
+5. Paste the entire JSON credentials content
+6. Set cache duration (recommended: 6 hours)
+7. Save settings

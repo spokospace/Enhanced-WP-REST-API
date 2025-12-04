@@ -14,23 +14,27 @@ use Spoko\EnhancedRestAPI\Features\{
     FormattedHeadlines,
     AdminInterface,
     CommentsSupport,
-    HeadlessMode
+    HeadlessMode,
+    GA4PopularPosts
 };
 use Spoko\EnhancedRestAPI\Services\{
     TranslationCache,
-    ErrorLogger
+    ErrorLogger,
+    GA4Client
 };
 
 final class Plugin extends Singleton
 {
     private ErrorLogger $logger;
     private TranslationCache $cache;
+    private GA4Client $ga4Client;
     private array $features;
 
     protected function __construct()
     {
         $this->logger = new ErrorLogger();
         $this->cache = new TranslationCache($this->logger);
+        $this->ga4Client = new GA4Client($this->logger);
         $this->initFeatures();
         $this->initHooks();
 
@@ -52,6 +56,7 @@ final class Plugin extends Singleton
             new FormattedHeadlines(),
             new CommentsSupport($this->logger),
             new HeadlessMode($this->logger),
+            new GA4PopularPosts($this->logger, $this->ga4Client),
             new AdminInterface($this->cache)
         ];
     }

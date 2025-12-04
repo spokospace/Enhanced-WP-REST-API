@@ -13,6 +13,7 @@ class AdminInterface
     private const NONCE_FEATURES = 'save_spoko_rest_features';
     private const NONCE_HEADLINES = 'save_spoko_rest_headlines';
     private const NONCE_HEADLESS = 'save_spoko_rest_headless';
+    private const NONCE_GA4 = 'save_spoko_rest_ga4';
 
     public function __construct(
         private TranslationCache $cache
@@ -96,6 +97,15 @@ class AdminInterface
             return 'Headless mode settings saved successfully!';
         }
 
+        // Handle GA4 settings
+        if (isset($_POST['save_ga4']) && check_admin_referer(self::NONCE_GA4)) {
+            $credentialsResult = $this->saveGA4Settings();
+            if (is_string($credentialsResult)) {
+                return $credentialsResult; // Return debug/error message
+            }
+            return 'GA4 Popular Posts settings saved successfully!';
+        }
+
         return null;
     }
 
@@ -156,6 +166,54 @@ class AdminInterface
         }
 
         update_option('spoko_rest_headless_client_url', $client_url);
+    }
+
+    private function saveGA4Settings(): bool|string
+    {
+        // Save enabled/disabled state
+        update_option(
+            'spoko_rest_ga4_popular_enabled',
+            isset($_POST['ga4_popular_enabled']) ? '1' : '0'
+        );
+
+        // Save and sanitize Property ID (numeric string)
+        $propertyId = isset($_POST['ga4_property_id'])
+            ? preg_replace('/[^0-9]/', '', sanitize_text_field($_POST['ga4_property_id']))
+            : '';
+        update_option('spoko_rest_ga4_property_id', $propertyId);
+
+        // Save cache duration (in hours)
+        $cacheHours = isset($_POST['ga4_cache_hours'])
+            ? max(1, min(24, (int) $_POST['ga4_cache_hours']))
+            : 6;
+        update_option('spoko_rest_ga4_cache_hours', $cacheHours);
+
+        // Save credentials JSON (only if provided - don't overwrite with empty)
+        if (!empty($_POST['ga4_credentials'])) {
+            // Don't use sanitize_textarea_field() - it breaks \n in private_key
+            $credentials = wp_unslash($_POST['ga4_credentials']);
+
+            // Validate JSON format and required fields
+            $decoded = json_decode($credentials, true);
+            $jsonError = json_last_error_msg();
+
+            if (!$decoded) {
+                return "Error: JSON decode failed - {$jsonError}";
+            }
+
+            if (!isset($decoded['client_email'])) {
+                return "Error: Missing 'client_email' in JSON";
+            }
+
+            if (!isset($decoded['private_key'])) {
+                return "Error: Missing 'private_key' in JSON";
+            }
+
+            // Re-encode to ensure clean JSON and save
+            update_option('spoko_rest_ga4_credentials', wp_json_encode($decoded));
+        }
+
+        return true;
     }
 
     public function renderAdminPage(): void
@@ -358,6 +416,123 @@ class AdminInterface
                     </table>
 
                     <?php submit_button('Save Headless Settings', 'primary', 'save_headless', false); ?>
+                </form>
+            </div>
+
+            <!-- GA4 Popular Posts -->
+            <div class="card">
+                <h2 class="title">GA4 Popular Posts</h2>
+                <p class="description">
+                    Configure Google Analytics 4 integration to serve popular posts based on real pageview data.
+                    Requires a GA4 property with a Service Account that has Viewer access.
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field(self::NONCE_GA4); ?>
+                    <input type="hidden" name="save_ga4" value="1">
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Enable GA4 Popular Posts</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="ga4_popular_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_ga4_popular_enabled', '0')); ?>>
+                                    Enable popular posts endpoint
+                                </label>
+                                <p class="description">
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/wp/v2/posts/popular'); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">GA4 Property ID</th>
+                            <td>
+                                <input type="text"
+                                    name="ga4_property_id"
+                                    value="<?php echo esc_attr(get_option('spoko_rest_ga4_property_id', '')); ?>"
+                                    class="regular-text"
+                                    placeholder="123456789"
+                                    pattern="[0-9]+"
+                                    title="Property ID should contain only numbers">
+                                <p class="description">
+                                    Find this in GA4: Admin &rarr; Property Settings &rarr; Property ID (numeric only, without "G-" prefix)
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Service Account Credentials</th>
+                            <td>
+                                <?php
+                                $savedCredentials = get_option('spoko_rest_ga4_credentials', '');
+                                $hasCredentials = !empty($savedCredentials);
+                                $credentialsInfo = null;
+                                if ($hasCredentials) {
+                                    $decoded = json_decode($savedCredentials, true);
+                                    $credentialsInfo = $decoded['client_email'] ?? 'Unknown';
+                                }
+                                ?>
+                                <textarea
+                                    name="ga4_credentials"
+                                    rows="6"
+                                    class="large-text code"
+                                    placeholder='{"type": "service_account", "client_email": "...", "private_key": "..."}'
+                                ></textarea>
+                                <?php if ($hasCredentials && $credentialsInfo): ?>
+                                    <p class="description" style="color: green;">
+                                        &#10003; Credentials configured for: <strong><?php echo esc_html($credentialsInfo); ?></strong><br>
+                                        <small>Leave empty to keep existing credentials, or paste new JSON to replace.</small>
+                                    </p>
+                                <?php else: ?>
+                                    <p class="description" style="color: #d63638;">
+                                        &#10005; No credentials configured.
+                                    </p>
+                                <?php endif; ?>
+                                <p class="description">
+                                    <strong>Setup instructions:</strong><br>
+                                    1. Go to <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank">Google Cloud Console &rarr; Service Accounts</a><br>
+                                    2. Create a new Service Account (or use existing)<br>
+                                    3. Create a JSON key and download it<br>
+                                    4. In GA4 Admin, add the service account email as a Viewer<br>
+                                    5. Paste the entire JSON contents above
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Cache Duration</th>
+                            <td>
+                                <input type="number"
+                                    name="ga4_cache_hours"
+                                    value="<?php echo esc_attr(get_option('spoko_rest_ga4_cache_hours', '6')); ?>"
+                                    min="1"
+                                    max="24"
+                                    style="width: 80px;">
+                                hours
+                                <p class="description">
+                                    How long to cache GA4 data (1-24 hours). Longer = fewer API calls, but less fresh data.
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">API Parameters</th>
+                            <td>
+                                <p class="description">
+                                    The endpoint accepts the following query parameters:<br>
+                                    <code>?limit=12</code> - Number of posts (1-50, default: 12)<br>
+                                    <code>?period=30d</code> - Time range: 7d, 14d, 30d, 90d<br>
+                                    <code>?lang=en</code> - Filter by language (requires Polylang)
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <?php submit_button('Save GA4 Settings', 'primary', 'save_ga4', false); ?>
                 </form>
             </div>
 
