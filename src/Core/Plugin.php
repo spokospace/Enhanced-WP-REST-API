@@ -15,7 +15,8 @@ use Spoko\EnhancedRestAPI\Features\{
     AdminInterface,
     CommentsSupport,
     HeadlessMode,
-    GA4PopularPosts
+    GA4PopularPosts,
+    CategoryFeaturedImage
 };
 use Spoko\EnhancedRestAPI\Services\{
     TranslationCache,
@@ -57,7 +58,8 @@ final class Plugin extends Singleton
             new CommentsSupport($this->logger),
             new HeadlessMode($this->logger),
             new GA4PopularPosts($this->logger, $this->ga4Client),
-            new AdminInterface($this->cache)
+            new AdminInterface($this->cache),
+            new CategoryFeaturedImage()
         ];
     }
 
@@ -81,9 +83,9 @@ final class Plugin extends Singleton
     public function registerGlobalFeatures(): void
     {
         foreach ($this->features as $feature) {
-            // Only register HeadlessMode and AdminInterface here
+            // Only register HeadlessMode, AdminInterface and CategoryFeaturedImage here
             // Other features will be registered via their specific hooks
-            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface) {
+            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface || $feature instanceof CategoryFeaturedImage) {
                 if (method_exists($feature, 'register')) {
                     $feature->register();
                 }
@@ -95,7 +97,7 @@ final class Plugin extends Singleton
     {
         foreach ($this->features as $feature) {
             // Skip features already registered globally
-            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface) {
+            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface || $feature instanceof CategoryFeaturedImage) {
                 continue;
             }
 
@@ -121,7 +123,7 @@ final class Plugin extends Singleton
     {
         foreach ($this->features as $feature) {
             // Skip features already registered globally
-            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface) {
+            if ($feature instanceof HeadlessMode || $feature instanceof AdminInterface || $feature instanceof CategoryFeaturedImage) {
                 continue;
             }
 

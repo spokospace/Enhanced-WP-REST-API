@@ -44,6 +44,14 @@ class TaxonomyFields
             'schema' => ['description' => 'Term display order', 'type' => 'integer']
         ]);
 
+        // Register featured image field for categories
+        if ($taxonomy === 'category') {
+            register_rest_field($taxonomy, 'featured_image_urls', [
+                'get_callback' => [$this, 'getCategoryFeaturedImageUrls'],
+                'schema' => ['description' => 'Featured image URLs for category', 'type' => 'object']
+            ]);
+        }
+
         // Add hook to modify the REST response
         add_filter("rest_prepare_{$taxonomy}", [$this, 'ensureTranslationsData'], 10, 3);
     }
@@ -112,5 +120,39 @@ class TaxonomyFields
             ]);
         }
         return $response;
+    }
+
+    /**
+     * Get featured image URLs for a category
+     * Images are stored in term_meta with key 'featured_image'
+     */
+    public function getCategoryFeaturedImageUrls(array $term): ?array
+    {
+        try {
+            $imageId = get_term_meta($term['id'], 'featured_image', true);
+
+            if (!$imageId) {
+                return null;
+            }
+
+            $imageSizes = get_intermediate_image_sizes();
+            $imageUrls = [];
+
+            foreach ($imageSizes as $size) {
+                $imageData = wp_get_attachment_image_src((int) $imageId, $size);
+                $imageUrls[$size] = $imageData ? $imageData[0] : null;
+            }
+
+            $fullImage = wp_get_attachment_image_src((int) $imageId, 'full');
+            $imageUrls['full'] = $fullImage ? $fullImage[0] : null;
+
+            return $imageUrls;
+        } catch (\Exception $e) {
+            $this->logger->logError('Error getting category featured image URLs', [
+                'term_id' => $term['id'],
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }

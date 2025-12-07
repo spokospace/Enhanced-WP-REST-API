@@ -14,6 +14,7 @@ class AdminInterface
     private const NONCE_HEADLINES = 'save_spoko_rest_headlines';
     private const NONCE_HEADLESS = 'save_spoko_rest_headless';
     private const NONCE_GA4 = 'save_spoko_rest_ga4';
+    private const NONCE_CATEGORY_IMAGES = 'sync_category_images';
 
     public function __construct(
         private TranslationCache $cache
@@ -104,6 +105,15 @@ class AdminInterface
                 return $credentialsResult; // Return debug/error message
             }
             return 'GA4 Popular Posts settings saved successfully!';
+        }
+
+        // Handle category images sync
+        if (isset($_POST['sync_category_images']) && check_admin_referer(self::NONCE_CATEGORY_IMAGES)) {
+            $synced = CategoryFeaturedImage::syncAllCategoryImages();
+            if ($synced === -1) {
+                return 'Polylang is not active. Cannot sync category images.';
+            }
+            return sprintf('Category images synced successfully! %d translation(s) updated.', $synced);
         }
 
         return null;
@@ -596,6 +606,23 @@ class AdminInterface
                     <?php submit_button('Save Headlines Settings', 'primary', 'save_headlines', false); ?>
                 </form>
             </div>
+
+            <!-- Category Featured Images Sync -->
+            <?php if (function_exists('pll_get_term_translations')): ?>
+            <div class="card">
+                <h2 class="title">Category Featured Images</h2>
+                <p class="description">
+                    Sync featured images across all category translations. When you add an image to a category,
+                    it should automatically sync to all language versions. Use this button to manually sync existing images.
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field(self::NONCE_CATEGORY_IMAGES); ?>
+                    <input type="hidden" name="sync_category_images" value="1">
+                    <?php submit_button('Sync Category Images', 'secondary', 'sync_category_images_btn', false); ?>
+                </form>
+            </div>
+            <?php endif; ?>
 
             <!-- Cache Statistics -->
             <div class="card">
