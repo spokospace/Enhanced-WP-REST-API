@@ -144,7 +144,8 @@ class AdminInterface
             'spoko_rest_page_excerpt_enabled',
             'spoko_rest_relative_urls_enabled',
             'spoko_rest_anonymous_comments_enabled',
-            'spoko_rest_comment_notifications_enabled'
+            'spoko_rest_comment_notifications_enabled',
+            'spoko_rest_post_counters_enabled'
         ];
 
         foreach ($features as $feature) {
@@ -356,6 +357,22 @@ class AdminInterface
                                 </label>
                                 <p class="description">
                                     Send email notifications to moderators when comments are created via REST API
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Post Counters</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="post_counters_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_post_counters_enabled', '1')); ?>>
+                                    Enable recursive post counting for categories
+                                </label>
+                                <p class="description">
+                                    Adds <code>total_count</code> field to category responses with post count including all descendants
                                 </p>
                             </td>
                         </tr>

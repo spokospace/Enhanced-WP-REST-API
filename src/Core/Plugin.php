@@ -16,7 +16,8 @@ use Spoko\EnhancedRestAPI\Features\{
     CommentsSupport,
     HeadlessMode,
     GA4PopularPosts,
-    CategoryFeaturedImage
+    CategoryFeaturedImage,
+    PostCounters
 };
 use Spoko\EnhancedRestAPI\Services\{
     TranslationCache,
@@ -59,7 +60,8 @@ final class Plugin extends Singleton
             new HeadlessMode($this->logger),
             new GA4PopularPosts($this->logger, $this->ga4Client),
             new AdminInterface($this->cache),
-            new CategoryFeaturedImage()
+            new CategoryFeaturedImage(),
+            new PostCounters($this->logger)
         ];
     }
 
