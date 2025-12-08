@@ -12,13 +12,13 @@ use WP_Error;
  * Supports multilingual menus with configurable menu-per-language mapping
  *
  * Endpoints:
- * - GET /wp-json/menus/v1/navbar/{lang} - Get navbar menu for specific language (pl, en)
- * - GET /wp-json/menus/v1/menus - List all menus (for admin selection)
- * - GET /wp-json/menus/v1/menus/{slug} - Get any menu by slug
+ * - GET /wp-json/spoko/v1/navbar/{lang} - Get navbar menu for specific language (pl, en)
+ * - GET /wp-json/spoko/v1/menus - List all menus (for admin selection)
+ * - GET /wp-json/spoko/v1/menus/{slug} - Get any menu by slug
  */
 class MenusEndpoint
 {
-    private const REST_NAMESPACE = 'menus/v1';
+    private const REST_NAMESPACE = 'spoko/v1';
     private const OPTION_ENABLED = 'spoko_rest_menus_enabled';
     private const OPTION_MENU_PL = 'spoko_rest_menus_navbar_pl';
     private const OPTION_MENU_EN = 'spoko_rest_menus_navbar_en';

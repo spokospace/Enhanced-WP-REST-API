@@ -42,12 +42,17 @@ src/
 
 ### REST API Endpoints
 
+All custom endpoints use the `spoko/v1` namespace (following WordPress REST API best practices).
+
 | Endpoint | Description |
 |----------|-------------|
-| `GET /wp-json/menus/v1/navbar/{lang}` | Navigation menu (pl/en) |
-| `GET /wp-json/wp/v2/posts/{id}/related` | Related posts by tags/categories |
-| `GET /wp-json/wp/v2/posts/{id}/toc` | Table of contents |
-| `GET /wp-json/wp/v2/posts/popular` | GA4 popular posts |
+| `GET /wp-json/spoko/v1/navbar/{lang}` | Navigation menu (pl/en) |
+| `GET /wp-json/spoko/v1/menus` | List all menus |
+| `GET /wp-json/spoko/v1/menus/{slug}` | Get menu by slug |
+| `GET /wp-json/spoko/v1/posts/{id}/related` | Related posts by tags/categories |
+| `GET /wp-json/spoko/v1/posts/{id}/toc` | Table of contents |
+| `GET /wp-json/spoko/v1/pages/{id}/toc` | Table of contents for pages |
+| `GET /wp-json/spoko/v1/posts/popular` | GA4 popular posts |
 
 ### Extended REST Fields
 
@@ -83,13 +88,15 @@ namespace Spoko\EnhancedRestAPI\Features;
 
 class MyFeature
 {
+    private const REST_NAMESPACE = 'spoko/v1';
+
     public function registerRestRoutes(): void
     {
         if (!get_option('spoko_rest_myfeature_enabled', true)) {
             return;
         }
 
-        register_rest_route('wp/v2', '/myendpoint', [
+        register_rest_route(self::REST_NAMESPACE, '/myendpoint', [
             'methods' => 'GET',
             'callback' => [$this, 'handleRequest'],
             'permission_callback' => '__return_true'
@@ -116,10 +123,13 @@ The Astro frontend at polo.blue fetches data from these endpoints:
 
 ```typescript
 // Example: Fetching navigation menu
-const response = await fetch(`${WP_API}/menus/v1/navbar/${lang}`);
+const response = await fetch(`${WP_API}/spoko/v1/navbar/${lang}`);
 const menu = await response.json();
 
-// Example: Fetching posts with extended data
+// Example: Fetching related posts
+const related = await fetch(`${WP_API}/spoko/v1/posts/${postId}/related`);
+
+// Example: Fetching posts with extended data (native WP endpoint with custom fields)
 const posts = await fetch(`${WP_API}/wp/v2/posts?_embed`);
 ```
 

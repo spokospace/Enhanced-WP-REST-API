@@ -14,13 +14,13 @@ use WP_REST_Response;
  * Provides REST API endpoint for fetching popular posts based on
  * Google Analytics 4 pageview data. Supports multilingual sites via Polylang.
  *
- * Endpoint: GET /wp-json/wp/v2/posts/popular
+ * Endpoint: GET /wp-json/spoko/v1/posts/popular
  *
  * @since 1.1.0
  */
 class GA4PopularPosts
 {
-    private const REST_NAMESPACE = 'wp/v2';
+    private const REST_NAMESPACE = 'spoko/v1';
     private const REST_ROUTE = '/posts/popular';
     private const DEFAULT_LIMIT = 20;
     private const CACHE_GROUP = 'spoko_rest_api';

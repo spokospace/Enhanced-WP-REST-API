@@ -298,7 +298,7 @@ class AdminInterface
                                     Enable Related Posts endpoint
                                 </label>
                                 <p class="description">
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/wp/v2/posts/{post_id}/related'); ?></code> endpoint
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/posts/{post_id}/related'); ?></code> endpoint
                                 </p>
                             </td>
                         </tr>
@@ -314,8 +314,8 @@ class AdminInterface
                                     Enable Table of Contents endpoint
                                 </label>
                                 <p class="description">
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/wp/v2/posts/{post_id}/toc'); ?></code> and
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/wp/v2/pages/{post_id}/toc'); ?></code> endpoints
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/posts/{post_id}/toc'); ?></code> and
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/pages/{post_id}/toc'); ?></code> endpoints
                                 </p>
                             </td>
                         </tr>
@@ -428,7 +428,7 @@ class AdminInterface
                                     Enable navigation menus REST API
                                 </label>
                                 <p class="description">
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/navbar/{lang}'); ?></code>
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/navbar/{lang}'); ?></code>
                                 </p>
                             </td>
                         </tr>
@@ -448,7 +448,7 @@ class AdminInterface
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description">
-                                    Menu served at <code>/wp-json/menus/v1/navbar/pl</code>
+                                    Menu served at <code>/wp-json/spoko/v1/navbar/pl</code>
                                 </p>
                             </td>
                         </tr>
@@ -465,7 +465,7 @@ class AdminInterface
                                     <?php endforeach; ?>
                                 </select>
                                 <p class="description">
-                                    Menu served at <code>/wp-json/menus/v1/navbar/en</code>
+                                    Menu served at <code>/wp-json/spoko/v1/navbar/en</code>
                                 </p>
                             </td>
                         </tr>
@@ -474,8 +474,8 @@ class AdminInterface
                             <th scope="row">Additional Endpoints</th>
                             <td>
                                 <p class="description">
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/menus'); ?></code> - List all menus<br>
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/menus/{slug}'); ?></code> - Get any menu by slug
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/menus'); ?></code> - List all menus<br>
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/menus/{slug}'); ?></code> - Get any menu by slug
                                 </p>
                             </td>
                         </tr>
@@ -573,7 +573,7 @@ class AdminInterface
                                     Enable popular posts endpoint
                                 </label>
                                 <p class="description">
-                                    <code><?php echo esc_html(get_site_url() . '/wp-json/wp/v2/posts/popular'); ?></code>
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/spoko/v1/posts/popular'); ?></code>
                                 </p>
                             </td>
                         </tr>

@@ -7,7 +7,7 @@ use Spoko\EnhancedRestAPI\Services\ErrorLogger;
 
 class TableOfContents
 {
-    private const REST_NAMESPACE = 'wp/v2';
+    private const REST_NAMESPACE = 'spoko/v1';
     private const REST_ROUTE = '/(?P<type>posts|pages)/(?P<id>\d+)/toc';
     private array $collisionCollector = [];
 

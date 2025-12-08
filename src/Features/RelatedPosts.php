@@ -10,7 +10,7 @@ use WP_Term_Query;
 class RelatedPosts
 {
     private const POSTS_LIMIT = 8;
-    private const REST_NAMESPACE = 'wp/v2';
+    private const REST_NAMESPACE = 'spoko/v1';
     private const REST_ROUTE = '/posts/(?P<id>\d+)/related';
     private const TAXONOMY_TAG = 'post_tag';
     private const TAXONOMY_CATEGORY = 'category';
