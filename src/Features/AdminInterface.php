@@ -15,6 +15,7 @@ class AdminInterface
     private const NONCE_HEADLESS = 'save_spoko_rest_headless';
     private const NONCE_GA4 = 'save_spoko_rest_ga4';
     private const NONCE_CATEGORY_IMAGES = 'sync_category_images';
+    private const NONCE_MENUS = 'save_spoko_rest_menus';
 
     public function __construct(
         private TranslationCache $cache
@@ -116,6 +117,12 @@ class AdminInterface
             return sprintf('Category images synced successfully! %d translation(s) updated.', $synced);
         }
 
+        // Handle menus settings
+        if (isset($_POST['save_menus']) && check_admin_referer(self::NONCE_MENUS)) {
+            $this->saveMenusSettings();
+            return 'Navigation menus settings saved successfully!';
+        }
+
         return null;
     }
 
@@ -154,6 +161,22 @@ class AdminInterface
                 isset($_POST[str_replace('spoko_rest_', '', $feature)]) ? '1' : '0'
             );
         }
+    }
+
+    private function saveMenusSettings(): void
+    {
+        // Save enabled/disabled state
+        update_option(
+            'spoko_rest_menus_enabled',
+            isset($_POST['menus_enabled']) ? '1' : '0'
+        );
+
+        // Save menu selections
+        $menu_pl = isset($_POST['menus_navbar_pl']) ? sanitize_text_field($_POST['menus_navbar_pl']) : '';
+        $menu_en = isset($_POST['menus_navbar_en']) ? sanitize_text_field($_POST['menus_navbar_en']) : '';
+
+        update_option('spoko_rest_menus_navbar_pl', $menu_pl);
+        update_option('spoko_rest_menus_navbar_en', $menu_en);
     }
 
     private function saveHeadlessSettings(): void
@@ -379,6 +402,86 @@ class AdminInterface
                     </table>
 
                     <?php submit_button('Save Features', 'primary', 'save_features', false); ?>
+                </form>
+            </div>
+
+            <!-- Navigation Menus -->
+            <div class="card">
+                <h2 class="title">Navigation Menus</h2>
+                <p class="description">
+                    Configure REST API endpoints for navigation menus. Select which WordPress menu should be served for each language.
+                </p>
+
+                <form method="post">
+                    <?php wp_nonce_field(self::NONCE_MENUS); ?>
+                    <input type="hidden" name="save_menus" value="1">
+
+                    <table class="form-table">
+                        <tr>
+                            <th scope="row">Enable Menus Endpoint</th>
+                            <td>
+                                <label>
+                                    <input type="checkbox"
+                                        name="menus_enabled"
+                                        value="1"
+                                        <?php checked('1', get_option('spoko_rest_menus_enabled', '1')); ?>>
+                                    Enable navigation menus REST API
+                                </label>
+                                <p class="description">
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/navbar/{lang}'); ?></code>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Polish Menu (PL)</th>
+                            <td>
+                                <?php
+                                $menus = MenusEndpoint::getMenusForSelect();
+                                $selected_pl = get_option('spoko_rest_menus_navbar_pl', '');
+                                ?>
+                                <select name="menus_navbar_pl" class="regular-text">
+                                    <?php foreach ($menus as $slug => $name): ?>
+                                        <option value="<?php echo esc_attr($slug); ?>" <?php selected($selected_pl, $slug); ?>>
+                                            <?php echo esc_html($name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description">
+                                    Menu served at <code>/wp-json/menus/v1/navbar/pl</code>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">English Menu (EN)</th>
+                            <td>
+                                <?php $selected_en = get_option('spoko_rest_menus_navbar_en', ''); ?>
+                                <select name="menus_navbar_en" class="regular-text">
+                                    <?php foreach ($menus as $slug => $name): ?>
+                                        <option value="<?php echo esc_attr($slug); ?>" <?php selected($selected_en, $slug); ?>>
+                                            <?php echo esc_html($name); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description">
+                                    Menu served at <code>/wp-json/menus/v1/navbar/en</code>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <th scope="row">Additional Endpoints</th>
+                            <td>
+                                <p class="description">
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/menus'); ?></code> - List all menus<br>
+                                    <code><?php echo esc_html(get_site_url() . '/wp-json/menus/v1/menus/{slug}'); ?></code> - Get any menu by slug
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <?php submit_button('Save Menu Settings', 'primary', 'save_menus', false); ?>
                 </form>
             </div>
 
